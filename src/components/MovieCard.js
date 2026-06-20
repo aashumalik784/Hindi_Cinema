@@ -1,67 +1,81 @@
-import Link from 'next/link'
-import Image from 'next/image'
-import { FaPlay, FaInfoCircle, FaStar } from 'react-icons/fa'
-import { getTMDBImageUrl } from '@/lib/tmdb'
-import { getArchiveThumbnail } from '@/lib/archive'
-import { getYearFromDate } from '@/lib/utils'
+import Link from 'next/link';
+import Image from 'next/image';
 
-export default function MovieCard({ movie, type = 'tmdb' }) {
-  const isPD = type === 'public-domain'
+export default function MovieCard({ movie, type }) {
+  const isStreaming = type === 'streaming';
   
-  const imageUrl = isPD 
-    ? getArchiveThumbnail(movie.identifier)
-    : getTMDBImageUrl(movie.poster_path)
-  
-  const title = isPD ? movie.title : movie.title
-  const year = isPD ? movie.year : getYearFromDate(movie.release_date)
-  const rating = isPD ? movie.avg_rating : movie.vote_average
-  
-  const linkUrl = isPD 
-    ? `/watch/${movie.identifier}`
-    : `/movies/${movie.id}`
-
   return (
-    <Link href={linkUrl}>
-      <div className="group relative bg-gray-900 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 cursor-pointer">
-        <div className="aspect-[2/3] relative">
+    <div className="bg-dark rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+      {/* Poster */}
+      <div className="relative aspect-[2/3]">
+        {movie.poster ? (
           <Image
-            src={imageUrl}
-            alt={title}
+            src={movie.poster}
+            alt={movie.title}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="absolute bottom-4 left-4 right-4">
-              <div className="flex items-center gap-2 mb-2">
-                {isPD ? (
-                  <FaPlay className="text-netflix-red" />
-                ) : (
-                  <FaInfoCircle className="text-blue-400" />
-                )}
-                <span className="text-xs font-semibold">
-                  {isPD ? 'Watch Free' : 'View Info'}
-                </span>
-              </div>
-            </div>
+        ) : (
+          <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+            <span className="text-gray-600 text-4xl">🎬</span>
           </div>
-        </div>
+        )}
         
-        <div className="p-3">
-          <h3 className="text-white font-semibold text-sm line-clamp-1 mb-1">
-            {title}
-          </h3>
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <span>{year}</span>
-            {rating && (
-              <div className="flex items-center gap-1">
-                <FaStar className="text-yellow-500" />
-                <span>{typeof rating === 'number' ? rating.toFixed(1) : rating}</span>
-              </div>
-            )}
-          </div>
+        {/* Badge */}
+        <div className="absolute top-2 right-2">
+          {isStreaming ? (
+            <span className="bg-green-600 text-white text-xs px-2 py-1 rounded">
+              FREE
+            </span>
+          ) : (
+            <span className="bg-primary text-white text-xs px-2 py-1 rounded">
+              INFO
+            </span>
+          )}
         </div>
       </div>
-    </Link>
-  )
-}
+
+      {/* Content */}
+      <div className="p-4">
+        <h3 className="text-white font-semibold text-lg mb-1 truncate">
+          {movie.title}
+        </h3>
+        
+        <div className="flex items-center justify-between text-sm text-gray-400 mb-2">
+          <span>{movie.year}</span>
+          {movie.rating && (
+            <span className="flex items-center">
+              ⭐ {movie.rating.toFixed(1)}
+            </span>
+          )}
+        </div>
+
+        {movie.genres && movie.genres.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-3">
+            {movie.genres.slice(0, 2).map((genre, index) => (
+              <span
+                key={index}
+                className="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded"
+              >
+                {genre}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Button */}
+        <Link
+          href={isStreaming ? `/watch/${movie.id}` : `/movies/${movie.id}`}
+          className={`block w-full text-center py-2 rounded font-semibold transition ${
+            isStreaming
+              ? 'bg-green-600 hover:bg-green-700 text-white'
+              : 'bg-primary hover:bg-red-700 text-white'
+          }`}
+        >
+          {isStreaming ? '▶ Watch Now' : 'ℹ More Info'}
+        </Link>
+      </div>
+    </div>
+  );
+            }
