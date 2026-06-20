@@ -1,17 +1,17 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getTMDMovieById, getAllTMDMovies } from '../../../lib/tmdb'
+import { getTMDBMovieById, getAllTMDBMovies } from '../../../lib/tmdb'
 import { getStreamingLinks, formatDate } from '../../../lib/utils'
 
-export function generateStaticParams() {
-  const movies = getAllTMDMovies()
+export async function generateStaticParams() {
+  const movies = await getAllTMDBMovies()
   return movies.map((movie) => ({
     id: movie.id.toString(),
   }))
 }
 
-export function generateMetadata({ params }) {
-  const movie = getTMDMovieById(params.id)
+export async function generateMetadata({ params }) {
+  const movie = await getTMDBMovieById(params.id)
   if (!movie) return { title: 'Movie Not Found' }
   return {
     title: `${movie.title} - Hindi Cinema`,
@@ -19,8 +19,8 @@ export function generateMetadata({ params }) {
   }
 }
 
-export default function MovieDetailPage({ params }) {
-  const movie = getTMDMovieById(params.id)
+export default async function MovieDetailPage({ params }) {
+  const movie = await getTMDBMovieById(params.id)
   if (!movie) notFound()
 
   const streamingLinks = getStreamingLinks(movie.title)
@@ -96,7 +96,8 @@ export default function MovieDetailPage({ params }) {
                 📺 Netflix
               </a>
               <a
-                href={streamingLinks.prime}                target="_blank"
+                href={streamingLinks.prime}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2"
               >
