@@ -1,1 +1,47 @@
-[]
+[
+  {
+    "id": 123456,
+    "title": "Sample Movie 1",
+    "original_title": "Sample Movie 1",
+    "overview": "This is a sample movie description for testing purposes.",
+    "poster": "https://image.tmdb.org/t/p/w500/sample1.jpg",
+    "backdrop": null,
+    "release_date": "2024-01-15",
+    "year": "2024",
+    "rating": 7.5,
+    "genres": ["Action", "Drama"],
+    "genre_ids": [28, 18],
+    "source": "TMDB",
+    "addedAt": "2024-01-20T10:00:00.000Z"
+  },
+  {
+    "id": 789012,
+    "title": "Sample Movie 2",
+    "original_title": "Sample Movie 2",
+    "overview": "Another sample movie description for testing the website.",
+    "poster": "https://image.tmdb.org/t/p/w500/sample2.jpg",
+    "backdrop": null,
+    "release_date": "2024-02-20",
+    "year": "2024",
+    "rating": 8.2,
+    "genres": ["Comedy", "Romance"],
+    "genre_ids": [35, 10749],
+    "source": "TMDB",
+    "addedAt": "2024-02-25T10:00:00.000Z"
+  },
+  {
+    "id": 345678,
+    "title": "Sample Movie 3",
+    "original_title": "Sample Movie 3",
+    "overview": "Third sample movie to ensure the website works correctly.",
+    "poster": "https://image.tmdb.org/t/p/w500/sample3.jpg",
+    "backdrop": null,
+    "release_date": "2024-03-10",
+    "year": "2024",
+    "rating": 6.8,
+    "genres": ["Thriller", "Mystery"],
+    "genre_ids": [53, 9648],
+    "source": "TMDB",
+    "addedAt": "2024-03-15T10:00:00.000Z"
+  }
+]
