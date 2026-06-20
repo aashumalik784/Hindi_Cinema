@@ -1,55 +1,26 @@
-// TMDB se latest movies ka data fetch karne ke functions
+const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY
+const BASE_URL = 'https://api.themoviedb.org/3'
 
-export async function getTMDBMovies() {
-  try {
-    const data = await import('@/data/tmdb-movies.json')
-    return data.default || []
-  } catch (error) {
-    console.error('Error loading TMDB movies:', error)
-    return []
-  }
+export async function getTrendingMovies() {
+  const res = await fetch(`${BASE_URL}/trending/movie/week?api_key=${TMDB_API_KEY}&with_original_language=hi`)
+  const data = await res.json()
+  return data.results || []
 }
 
-export async function getTMDBMovieById(id) {
-  const movies = await getTMDBMovies()
-  return movies.find(movie => movie.id === parseInt(id))
+export async function getMoviesByGenre(genreId) {
+  const res = await fetch(`${BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&with_original_language=hi&sort_by=popularity.desc`)
+  const data = await res.json()
+  return data.results || []
 }
 
-export async function getTMDBMoviesByGenre(genreId) {
-  const movies = await getTMDBMovies()
-  return movies.filter(movie => 
-    movie.genre_ids?.includes(parseInt(genreId))
-  )
+export async function getGenres() {
+  const res = await fetch(`${BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=en`)
+  const data = await res.json()
+  return data.genres || []
 }
 
-export function getTMDBImageUrl(path, size = 'w500') {
-  if (!path) return '/videos/placeholder.jpg'
-  return `https://image.tmdb.org/t/p/${size}${path}`
-}
-
-export function getTMDBTrailerUrl(videos) {
-  const trailer = videos?.results?.find(
-    video => video.type === 'Trailer' && video.site === 'YouTube'
-  )
-  return trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null
-}
-
-export const TMDB_GENRES = {
-  28: 'Action',
-  12: 'Adventure', 
-  16: 'Animation',
-  35: 'Comedy',
-  80: 'Crime',
-  18: 'Drama',
-  10751: 'Family',
-  14: 'Fantasy',
-  36: 'History',
-  27: 'Horror',
-  10402: 'Music',
-  9648: 'Mystery',
-  10749: 'Romance',
-  878: 'Sci-Fi',
-  53: 'Thriller',
-  10752: 'War',
-  37: 'Western'
+export async function getMovieDetails(id) {
+  const res = await fetch(`${BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}&append_to_response=videos`)
+  const data = await res.json()
+  return data
 }
