@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { getTMDMovieById, getAllTMDMovies } from '../../../lib/tmdb';
 import { getStreamingLinks, formatDate } from '../../../lib/utils';
 
-// Yeh function zaroori hai static export ke liye
 export function generateStaticParams() {
   const movies = getAllTMDMovies();
   return movies.map((movie) => ({
@@ -11,7 +10,6 @@ export function generateStaticParams() {
   }));
 }
 
-// SEO ke liye metadata
 export function generateMetadata({ params }) {
   const movie = getTMDMovieById(params.id);
   
@@ -36,7 +34,6 @@ export default function MovieDetailPage({ params }) {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Back Button */}
       <Link
         href="/movies"
         className="inline-flex items-center text-gray-400 hover:text-white mb-6 transition"
@@ -45,13 +42,12 @@ export default function MovieDetailPage({ params }) {
       </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Poster */}
         <div className="md:col-span-1">
-          {movie.poster ? (            <img
+          {movie.poster ? (
+            <img
               src={movie.poster}
               alt={movie.title}
-              className="w-full rounded-lg shadow-lg"
-            />
+              className="w-full rounded-lg shadow-lg"            />
           ) : (
             <div className="w-full aspect-[2/3] bg-gray-800 rounded-lg flex items-center justify-center">
               <span className="text-gray-600 text-6xl">🎬</span>
@@ -59,7 +55,6 @@ export default function MovieDetailPage({ params }) {
           )}
         </div>
 
-        {/* Info */}
         <div className="md:col-span-2">
           <h1 className="text-4xl font-bold text-white mb-4">{movie.title}</h1>
           
@@ -96,13 +91,12 @@ export default function MovieDetailPage({ params }) {
             </div>
           )}
 
-          {/* Streaming Options */}          <div className="mb-8">
+          <div className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">Watch On</h2>
             <div className="flex flex-wrap gap-4">
               <a
                 href={streamingLinks.netflix}
-                target="_blank"
-                rel="noopener noreferrer"
+                target="_blank"                rel="noopener noreferrer"
                 className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2"
               >
                 📺 Netflix
@@ -126,7 +120,6 @@ export default function MovieDetailPage({ params }) {
             </div>
           </div>
 
-          {/* Trailer Placeholder */}
           <div>
             <h2 className="text-xl font-semibold text-white mb-4">Trailer</h2>
             <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center">
