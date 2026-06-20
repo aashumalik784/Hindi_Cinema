@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { getTMDMovieById, getAllTMDMovies } from '../../../lib/tmdb';
 import { getStreamingLinks, formatDate } from '../../../lib/utils';
 
+// Yeh function zaroori hai static export ke liye
 export function generateStaticParams() {
   const movies = getAllTMDMovies();
   return movies.map((movie) => ({
@@ -11,17 +11,16 @@ export function generateStaticParams() {
   }));
 }
 
+// SEO ke liye metadata
 export function generateMetadata({ params }) {
   const movie = getTMDMovieById(params.id);
   
   if (!movie) {
-    return {
-      title: 'Movie Not Found',
-    };
+    return { title: 'Movie Not Found' };
   }
 
   return {
-    title: `${movie.title} - Info & Trailer`,
+    title: `${movie.title} - Info & Trailer | Hindi Cinema`,
     description: movie.overview || `Details about ${movie.title}`,
   };
 }
@@ -47,12 +46,10 @@ export default function MovieDetailPage({ params }) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Poster */}
-        <div className="md:col-span-1">          {movie.poster ? (
-            <Image
+        <div className="md:col-span-1">
+          {movie.poster ? (            <img
               src={movie.poster}
               alt={movie.title}
-              width={500}
-              height={750}
               className="w-full rounded-lg shadow-lg"
             />
           ) : (
@@ -96,10 +93,10 @@ export default function MovieDetailPage({ params }) {
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-white mb-3">Overview</h2>
               <p className="text-gray-300 leading-relaxed">{movie.overview}</p>
-            </div>          )}
+            </div>
+          )}
 
-          {/* Streaming Options */}
-          <div className="mb-8">
+          {/* Streaming Options */}          <div className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">Watch On</h2>
             <div className="flex flex-wrap gap-4">
               <a
@@ -129,13 +126,11 @@ export default function MovieDetailPage({ params }) {
             </div>
           </div>
 
-          {/* Trailer */}
+          {/* Trailer Placeholder */}
           <div>
             <h2 className="text-xl font-semibold text-white mb-4">Trailer</h2>
             <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center">
-              <p className="text-gray-400">
-                🎥 Trailer will be available soon
-              </p>
+              <p className="text-gray-400">🎥 Trailer will be available soon</p>
             </div>
           </div>
         </div>
