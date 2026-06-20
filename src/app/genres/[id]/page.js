@@ -16,7 +16,7 @@ export default function GenrePage() {
       setMovies(data)
       setLoading(false)
     }
-    loadMovies()
+    if (params.id) loadMovies()
   }, [params.id])
 
   if (loading) return <div className="text-white p-8 pt-20">Loading...</div>
