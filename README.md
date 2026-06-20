@@ -1,26 +1,17 @@
-# Hindi Cinema - Free Public Domain Bollywood Movies
+4. Fetch movies:
+```bash
+   npm run fetch:public-domain
+   npm run fetch:tmdb
+```
+5. Run development server: `npm run dev`
 
-> 100% Legal streaming of classic Hindi movies + Latest Bollywood trailers
+## Auto-Update
 
-## 🎬 Features
+GitHub Actions automatically fetches new movies daily:
+- Public domain movies: Every day at 6 AM UTC
+- TMDB movies: Every day at 12 PM UTC
 
-- **Watch Free Movies**: Stream public domain Hindi classics from Internet Archive
-- **Latest Trailers**: Browse new Bollywood releases via TMDB
-- **Genre Categories**: Action, Comedy, Drama, Romance, and more
-- **No Login Required**: Completely free, no account needed
-- **Legal & Safe**: No copyrighted content hosted on our servers
-- **Mobile Responsive**: Netflix-style UI that works on all devices
-
-## 🚀 Tech Stack
-
-- **Framework**: Next.js 14 (App Router)
-- **Styling**: Tailwind CSS
-- **Deployment**: Vercel
-- **Data Sources**: 
-    - Internet Archive - Public domain movies
-    - TMDB API - Latest movie metadata & trailers
-
-## ⚖️ Legal Compliance
+## Legal Compliance
 
 This project is 100% legal:
 - ✅ Only streams public domain movies from Internet Archive
@@ -29,9 +20,27 @@ This project is 100% legal:
 - ✅ Full DMCA policy and takedown process
 - ✅ Compliant with TMDB API terms
 
-## 🛠️ Setup
+## Deployment to Cloudflare Pages
 
-1. **Clone the repo**
-```bash
-git clone https://github.com/Aashumalik784/Hindi_Cinema.git
-cd Hindi_Cinema
+1. Push code to GitHub
+2. Go to Cloudflare Dashboard → Workers & Pages
+3. Create new Pages application
+4. Connect to your GitHub repository
+5. Build settings:
+   - Framework preset: Next.js
+   - Build command: `npm run build`
+   - Build output directory: `out`
+6. Add environment variable: `TMDB_API_KEY`
+7. Deploy!
+
+## Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run fetch:public-domain` - Fetch public domain movies
+- `npm run fetch:tmdb` - Fetch TMDB movies
+- `npm run fetch:all` - Fetch all movies
+
+## License
+
+MIT License - Free to use and modify
