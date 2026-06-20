@@ -1,50 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
   images: {
+    unoptimized: true,
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'image.tmdb.org',
-      },
-      {
-        protocol: 'https',
-        hostname: 'archive.org',
-      },
-      {
-        protocol: 'https',
-        hostname: 'ia601508.us.archive.org',
-      },
-      {
-        protocol: 'https',
-        hostname: 'ia801508.us.archive.org',
-      },
-      {
-        protocol: 'https',
-        hostname: 'ia901508.us.archive.org',
-      },
+      { protocol: 'https', hostname: 'image.tmdb.org' },
+      { protocol: 'https', hostname: 'archive.org' },
     ],
   },
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
-        ],
-      },
-    ]
-  },
 }
-
 module.exports = nextConfig
