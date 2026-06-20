@@ -1,26 +1,21 @@
-import { Inter } from 'next/font/google'
-import './globals.css'
-import Header from '@/components/Header'
-import Footer from '@/components/Footer'
-
-const inter = Inter({ subsets: ['latin'] })
+import './globals.css';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 export const metadata = {
-  title: 'Hindi Cinema - Watch Free Public Domain Movies & Latest Trailers',
-  description: 'Stream classic Hindi public domain movies for free. Watch trailers of latest Bollywood movies. 100% Legal content from Internet Archive.',
-  keywords: 'hindi movies, bollywood, free movies, public domain, watch online, hindi cinema',
-}
+  title: 'Hindi Cinema - Free Public Domain Bollywood Movies',
+  description: 'Watch free public domain Hindi classic movies and discover latest Bollywood releases. 100% legal streaming!',
+  keywords: 'hindi movies, bollywood, public domain, free movies, classic cinema',
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-netflix-black text-white min-h-screen`}>
-        <Header />
-        <main className="min-h-screen">
-          {children}
-        </main>
+      <body className="bg-darker text-white min-h-screen">
+        <Navbar />
+        <main>{children}</main>
         <Footer />
       </body>
     </html>
-  )
+  );
 }
