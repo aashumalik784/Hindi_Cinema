@@ -1,36 +1,29 @@
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { getTMDMovieById, getAllTMDMovies } from '../../../lib/tmdb';
-import { getStreamingLinks, formatDate } from '../../../lib/utils';
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { getTMDMovieById, getAllTMDMovies } from '../../../lib/tmdb'
+import { getStreamingLinks, formatDate } from '../../../lib/utils'
 
 export function generateStaticParams() {
-  const movies = getAllTMDMovies();
+  const movies = getAllTMDMovies()
   return movies.map((movie) => ({
     id: movie.id.toString(),
-  }));
+  }))
 }
 
 export function generateMetadata({ params }) {
-  const movie = getTMDMovieById(params.id);
-  
-  if (!movie) {
-    return { title: 'Movie Not Found' };
-  }
-
+  const movie = getTMDMovieById(params.id)
+  if (!movie) return { title: 'Movie Not Found' }
   return {
-    title: `${movie.title} - Info & Trailer | Hindi Cinema`,
-    description: movie.overview || `Details about ${movie.title}`,
-  };
+    title: `${movie.title} - Hindi Cinema`,
+    description: movie.overview || `Watch ${movie.title}`,
+  }
 }
 
 export default function MovieDetailPage({ params }) {
-  const movie = getTMDMovieById(params.id);
+  const movie = getTMDMovieById(params.id)
+  if (!movie) notFound()
 
-  if (!movie) {
-    notFound();
-  }
-
-  const streamingLinks = getStreamingLinks(movie.title);
+  const streamingLinks = getStreamingLinks(movie.title)
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -47,14 +40,14 @@ export default function MovieDetailPage({ params }) {
             <img
               src={movie.poster}
               alt={movie.title}
-              className="w-full rounded-lg shadow-lg"            />
+              className="w-full rounded-lg shadow-lg"
+            />
           ) : (
             <div className="w-full aspect-[2/3] bg-gray-800 rounded-lg flex items-center justify-center">
               <span className="text-gray-600 text-6xl">🎬</span>
             </div>
           )}
         </div>
-
         <div className="md:col-span-2">
           <h1 className="text-4xl font-bold text-white mb-4">{movie.title}</h1>
           
@@ -96,14 +89,14 @@ export default function MovieDetailPage({ params }) {
             <div className="flex flex-wrap gap-4">
               <a
                 href={streamingLinks.netflix}
-                target="_blank"                rel="noopener noreferrer"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2"
               >
                 📺 Netflix
               </a>
               <a
-                href={streamingLinks.prime}
-                target="_blank"
+                href={streamingLinks.prime}                target="_blank"
                 rel="noopener noreferrer"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2"
               >
@@ -129,5 +122,5 @@ export default function MovieDetailPage({ params }) {
         </div>
       </div>
     </div>
-  );
+  )
             }
