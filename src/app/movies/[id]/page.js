@@ -123,4 +123,4 @@ export default function MovieDetailPage({ params }) {
       </div>
     </div>
   )
-            }
+}
