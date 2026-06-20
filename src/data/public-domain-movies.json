@@ -1,0 +1,47 @@
+[
+  {
+    "id": "charade_1963",
+    "title": "Charade",
+    "year": 1963,
+    "identifier": "charade_1963",
+    "poster": "https://archive.org/services/img/charade_1963",
+    "genre": ["Thriller", "Romance"],
+    "color": true
+  },
+  {
+    "id": "house_on_haunted_hill",
+    "title": "House on Haunted Hill",
+    "year": 1959,
+    "identifier": "house_on_haunted_hill",
+    "poster": "https://archive.org/services/img/house_on_haunted_hill",
+    "genre": ["Horror", "Mystery"],
+    "color": true
+  },
+  {
+    "id": "santa_claus_conquers_the_martians",
+    "title": "Santa Claus Conquers the Martians",
+    "year": 1964,
+    "identifier": "santa_claus_conquers_the_martians",
+    "poster": "https://archive.org/services/img/santa_claus_conquers_the_martians",
+    "genre": ["Sci-Fi", "Family", "Comedy"],
+    "color": true
+  },
+  {
+    "id": "the_little_shop_of_horrors",
+    "title": "The Little Shop of Horrors",
+    "year": 1960,
+    "identifier": "the_little_shop_of_horrors",
+    "poster": "https://archive.org/services/img/the_little_shop_of_horrors",
+    "genre": ["Comedy", "Horror"],
+    "color": true
+  },
+  {
+    "id": "last_woman_on_earth",
+    "title": "Last Woman on Earth",
+    "year": 1960,
+    "identifier": "last_woman_on_earth_1960",
+    "poster": "https://archive.org/services/img/last_woman_on_earth_1960",
+    "genre": ["Sci-Fi", "Drama"],
+    "color": true
+  }
+]
