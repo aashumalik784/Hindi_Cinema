@@ -8,10 +8,12 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'netflix-red': '#E50914',
-        'netflix-black': '#141414',
+        primary: '#E50914',
+        secondary: '#564D4D',
+        dark: '#141414',
+        darker: '#0B0B0B',
       },
     },
   },
   plugins: [],
-}
+};
