@@ -2,15 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: #141414;
-  color: white;
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 11, 11, 11;
+  --background-end-rgb: 20, 20, 20;
 }
 
-/* Scrollbar styling */
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+/* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -18,18 +28,15 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #E50914;
-  border-radius: 4px;
+  background: #333;
+  border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #f40612;
+  background: #555;
 }
 
-/* Line clamp for movie titles */
-.line-clamp-1 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
+/* Video player custom styles */
+video::-webkit-media-controls-panel {
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
 }
