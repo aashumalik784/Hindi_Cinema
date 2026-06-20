@@ -1,32 +1,25 @@
-// Internet Archive se public domain movies fetch karne ke functions
+import publicDomainMovies from '../../data/public-domain-movies.json';
 
-export async function getPublicDomainMovies() {
-  try {
-    const data = await import('@/data/public-domain-movies.json')
-    return data.default || []
-  } catch (error) {
-    console.error('Error loading public domain movies:', error)
-    return []
-  }
+export function getAllPublicDomainMovies() {
+  return publicDomainMovies;
 }
 
-export async function getPublicDomainMovieById(id) {
-  const movies = await getPublicDomainMovies()
-  return movies.find(movie => movie.identifier === id)
+export function getPublicDomainMovieById(id) {
+  return publicDomainMovies.find(movie => movie.id === id);
 }
 
-export async function getPublicDomainMoviesByGenre(genre) {
-  const movies = await getPublicDomainMovies()
-  return movies.filter(movie => 
-    movie.subject?.toLowerCase().includes(genre.toLowerCase()) ||
-    movie.title?.toLowerCase().includes(genre.toLowerCase())
-  )
+export function getPublicDomainMoviesByGenre(genre) {
+  return publicDomainMovies.filter(movie => 
+    movie.genre && movie.genre.includes(genre)
+  );
 }
 
-export function getArchiveVideoUrl(identifier, filename) {
-  return `https://archive.org/download/${identifier}/${filename}`
-}
-
-export function getArchiveThumbnail(identifier) {
-  return `https://archive.org/services/img/${identifier}`
+export function getAllGenres() {
+  const genres = new Set();
+  publicDomainMovies.forEach(movie => {
+    if (movie.genre) {
+      movie.genre.forEach(g => genres.add(g));
+    }
+  });
+  return Array.from(genres).sort();
 }
