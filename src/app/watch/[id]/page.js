@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
-import VideoPlayer from '../../../components/VideoPlayer';
 import Link from 'next/link';
 import { getPublicDomainMovieById, getAllPublicDomainMovies } from '../../../lib/archive';
 
+// Yeh function zaroori hai static export ke liye
 export function generateStaticParams() {
   const movies = getAllPublicDomainMovies();
   return movies.map((movie) => ({
@@ -10,17 +10,16 @@ export function generateStaticParams() {
   }));
 }
 
+// SEO ke liye metadata
 export function generateMetadata({ params }) {
   const movie = getPublicDomainMovieById(params.id);
   
   if (!movie) {
-    return {
-      title: 'Movie Not Found',
-    };
+    return { title: 'Movie Not Found' };
   }
 
   return {
-    title: `${movie.title} - Watch Free`,
+    title: `${movie.title} - Watch Free | Hindi Cinema`,
     description: movie.description || `Watch ${movie.title} for free`,
   };
 }
@@ -44,11 +43,16 @@ export default function WatchMoviePage({ params }) {
 
       {/* Video Player */}
       <div className="mb-8">
-        <VideoPlayer
-          videoUrl={movie.videoUrl}
-          poster={movie.poster}
-          title={movie.title}
-        />
+        <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
+          <video
+            controls
+            poster={movie.poster}
+            className="w-full h-full"
+          >
+            <source src={movie.videoUrl} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
       </div>
 
       {/* Movie Info */}
@@ -77,10 +81,10 @@ export default function WatchMoviePage({ params }) {
             download
             className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition"
           >
-            ⬇ Download Movie
+            ⬇️ Download Movie
           </a>
         )}
       </div>
     </div>
   );
-            }
+        }
