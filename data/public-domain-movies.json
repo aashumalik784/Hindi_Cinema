@@ -1,1 +1,35 @@
-[]
+[
+  {
+    "id": "night-of-living-dead",
+    "title": "Night of the Living Dead",
+    "year": "1968",
+    "description": "A classic horror film about zombies attacking a farmhouse. This public domain masterpiece changed horror cinema forever.",
+    "poster": "https://archive.org/services/img/NightOfTheLivingDead",
+    "videoUrl": "https://archive.org/download/NightOfTheLivingDead/NightOfTheLivingDead_512kb.mp4",
+    "genre": ["Horror", "Classic"],
+    "source": "Internet Archive",
+    "addedAt": "2024-01-20T10:00:00.000Z"
+  },
+  {
+    "id": "charlie-chaplin-kid",
+    "title": "The Kid",
+    "year": "1921",
+    "description": "Charlie Chaplin's first feature-length film, a touching comedy-drama about a tramp who cares for an abandoned child.",
+    "poster": "https://archive.org/services/img/TheKid_1921",
+    "videoUrl": "https://archive.org/download/TheKid_1921/TheKid_1921_512kb.mp4",
+    "genre": ["Comedy", "Drama", "Classic"],
+    "source": "Internet Archive",
+    "addedAt": "2024-01-20T10:00:00.000Z"
+  },
+  {
+    "id": "metropolis-1927",
+    "title": "Metropolis",
+    "year": "1927",
+    "description": "Fritz Lang's silent science fiction masterpiece about a futuristic city divided between workers and planners.",
+    "poster": "https://archive.org/services/img/Metropolis_1927",
+    "videoUrl": "https://archive.org/download/Metropolis_1927/Metropolis_1927_512kb.mp4",
+    "genre": ["Science Fiction", "Classic", "Drama"],
+    "source": "Internet Archive",
+    "addedAt": "2024-01-20T10:00:00.000Z"
+  }
+]
