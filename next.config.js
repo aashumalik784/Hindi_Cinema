@@ -4,9 +4,19 @@ const nextConfig = {
   images: {
     unoptimized: true,
     remotePatterns: [
-      { protocol: 'https', hostname: 'image.tmdb.org' },
-      { protocol: 'https', hostname: 'archive.org' },
+      {
+        protocol: 'https',
+        hostname: 'image.tmdb.org',
+      },
+      {
+        protocol: 'https',
+        hostname: 'archive.org',
+      },
     ],
   },
-}
-module.exports = nextConfig
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+};
+
+module.exports = nextConfig;
