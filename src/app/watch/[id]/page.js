@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getPublicDomainMovieById, getAllPublicDomainMovies } from '../../../lib/archive';
 
-// Yeh function zaroori hai static export ke liye
 export function generateStaticParams() {
   const movies = getAllPublicDomainMovies();
   return movies.map((movie) => ({
@@ -10,7 +9,6 @@ export function generateStaticParams() {
   }));
 }
 
-// SEO ke liye metadata
 export function generateMetadata({ params }) {
   const movie = getPublicDomainMovieById(params.id);
   
@@ -33,7 +31,6 @@ export default function WatchMoviePage({ params }) {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Back Button */}
       <Link
         href="/watch"
         className="inline-flex items-center text-gray-400 hover:text-white mb-6 transition"
@@ -41,7 +38,6 @@ export default function WatchMoviePage({ params }) {
         ← Back to Movies
       </Link>
 
-      {/* Video Player */}
       <div className="mb-8">
         <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
           <video
@@ -55,7 +51,6 @@ export default function WatchMoviePage({ params }) {
         </div>
       </div>
 
-      {/* Movie Info */}
       <div className="bg-dark rounded-lg p-6">
         <h1 className="text-3xl font-bold text-white mb-4">{movie.title}</h1>
         
@@ -74,7 +69,6 @@ export default function WatchMoviePage({ params }) {
           </div>
         )}
 
-        {/* Download Button */}
         {movie.videoUrl && (
           <a
             href={movie.videoUrl}
@@ -87,4 +81,4 @@ export default function WatchMoviePage({ params }) {
       </div>
     </div>
   );
-        
+}
