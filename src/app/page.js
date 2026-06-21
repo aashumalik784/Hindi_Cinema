@@ -19,7 +19,7 @@ export default function Home() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-bold text-white mb-2">
-              🎥 Watch Free Movies
+               Watch Free Movies
             </h2>
             <p className="text-gray-400">
               Legally free classic Hindi movies from Internet Archive
@@ -56,7 +56,7 @@ export default function Home() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-bold text-white mb-2">
-              🆕 Latest Movies
+               Latest Movies
             </h2>
             <p className="text-gray-400">
               Discover trending Bollywood releases with trailers
@@ -87,4 +87,4 @@ export default function Home() {
       </section>
     </div>
   );
-          }
+}
