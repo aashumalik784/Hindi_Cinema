@@ -2,359 +2,332 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 
-// Better search queries - ONLY for Hindi/Bollywood movies
-const SEARCH_QUERIES = [
-  'hindi film public domain',
-  'bollywood classic movie',
-  'indian cinema public domain',
-  'hindi old movie 1950s 1960s 1970s',
-  'classic bollywood film',
-  'hindi drama movie',
-  'hindi comedy film',
-  'hindi romance movie',
-  'hindi action film',
-  'hindi musical movie',
-];
+const TMDB_API_KEY = process.env.TMDB_API_KEY || '99bd086786b1935a8a6934405b4281ec';
+const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
-// Remove unwanted keywords from titles
-const UNWANTED_KEYWORDS = [
-  'untouched', 'web', 'dl', 'brrip', 'hdrip', 'dvdrip', 'bluray', 'blu-ray',
-  '720p', '1080p', '480p', '2160p', '4k', 'hd', 'sd',
-  'avc', 'h264', 'h265', 'hevc', 'x264', 'x265', 'aac', 'mp3', 'ac3', 'dts',
-  'superhit', 'blockbuster', 'bollywood', 'hollywood', 'south', 'dubbed',
-  'movie', 'film', 'cinema', 'video', 'full', 'and', 'with', 'feat', 'ft',
-  'bhaiyaa', 'bade bhaiyaa', 'hindi', 'english', 'esub', 'esubs',
-  'funny', 'action', 'comedy', 'romantic', 'drama', 'thriller'
-];
+// Genre mapping (TMDB IDs to names)
+const GENRE_MAP = {
+  28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy',
+  80: 'Crime', 99: 'Documentary', 18: 'Drama', 10751: 'Family',
+  14: 'Fantasy', 36: 'History', 27: 'Horror', 10402: 'Music',
+  9648: 'Mystery', 10749: 'Romance', 878: 'Sci-Fi', 10770: 'TV Movie',
+  53: 'Thriller', 10752: 'War', 37: 'Western'
+};
 
-// Words that indicate it's NOT a movie
-const NOT_MOVIE_INDICATORS = [
-  'episode', 'podcast', 'series', 'season', 's01', 's02', 's03', 's04',
-  'complete series', 'complete season', 'tv show', 'documentary',
-  'horror of babylon', 'the horror of babylon', 'drawn together',
-  'meet the crew', 'bonus episode', '13 nights of halloween'
-];
+// Indian streaming platforms mapping
+const INDIAN_PROVIDERS = {
+  'Netflix': { key: 'netflix', baseUrl: 'https://www.netflix.com/in/' },
+  'Amazon Prime Video': { key: 'prime', baseUrl: 'https://www.primevideo.com/detail/' },
+  'Disney Plus': { key: 'hotstar', baseUrl: 'https://www.hotstar.com/in/movies/' },
+  'Disney+ Hotstar': { key: 'hotstar', baseUrl: 'https://www.hotstar.com/in/movies/' },
+  'Jio Cinema': { key: 'jiocinema', baseUrl: 'https://www.jiocinema.com/movies/' },
+  'Zee5': { key: 'zee5', baseUrl: 'https://www.zee5.com/movies/details/' },
+  'Sony Liv': { key: 'sonyliv', baseUrl: 'https://www.sonyliv.com/movies/' },
+  'Apple TV Plus': { key: 'apple', baseUrl: 'https://tv.apple.com/movie/' },
+  'Google Play Movies': { key: 'google', baseUrl: 'https://play.google.com/store/movies/details?id=' },
+  'YouTube': { key: 'youtube', baseUrl: 'https://www.youtube.com/results?search_query=' }
+};
 
-// Clean movie title
-function cleanTitle(title) {
-  if (!title) return { title: 'Unknown Title', year: null };
-  
-  let clean = title;
-  
-  // Remove brackets content (but keep year in parentheses)
-  clean = clean.replace(/\[(.*?)\]/g, '');
-  clean = clean.replace(/\((.*?)\)/g, (match, content) => {
-    // Keep if it's a year
-    if (/\b(19|20)\d{2}\b/.test(content)) {
-      return match;
-    }    return '';
-  });
-  
-  // Remove unwanted keywords
-  UNWANTED_KEYWORDS.forEach(keyword => {
-    const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
-    clean = clean.replace(regex, '');
-  });
-  
-  // Remove multiple dots, dashes, underscores, pipes
-  clean = clean.replace(/[._|]+/g, ' ');
-  clean = clean.replace(/[-]{2,}/g, ' ');
-  
-  // Remove extra spaces
-  clean = clean.replace(/\s+/g, ' ').trim();
-  
-  // Remove trailing punctuation
-  clean = clean.replace(/[,.\-_:]+$/, '').trim();
-  
-  // Extract year
-  const yearMatch = clean.match(/\b(19|20)(\d{2})\b/);
-  let year = null;
-  
-  if (yearMatch) {
-    year = yearMatch[0];
-    clean = clean.replace(year, '').trim();
-    clean = clean.replace(/[\s\(\)]+$/, '').trim();
-  }
-  
-  // Limit title length
-  if (clean.length > 80) {
-    clean = clean.substring(0, 80).trim();
-    const lastSpace = clean.lastIndexOf(' ');
-    if (lastSpace > 60) {
-      clean = clean.substring(0, lastSpace);
-    }
-  }
-  
-  // Capitalize properly
-  clean = clean.split(' ').map(word => {
-    if (word.length > 2) {
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    }
-    return word.toUpperCase();
-  }).join(' ');
-  
-  return { 
-    title: clean || title.split('(')[0].trim(), 
-    year 
-  };}
-
-// Check if it's actually a movie (not podcast/TV show)
-function isMovie(title, description) {
-  const text = `${title} ${description}`.toLowerCase();
-  
-  // If it contains podcast/TV show indicators, reject it
-  for (const indicator of NOT_MOVIE_INDICATORS) {
-    if (text.includes(indicator.toLowerCase())) {
-      return false;
-    }
-  }
-  
-  // Must have a year or look like a movie title
-  const hasYear = /\b(19|20)\d{2}\b/.test(text);
-  const hasMovieKeywords = /\b(movie|film|cinema|picture)\b/.test(text);
-  
-  return hasYear || hasMovieKeywords || title.length < 100;
-}
-
-// Extract year from title or metadata
-function extractYear(title, metadataYear) {
-  // First try metadata year
-  if (metadataYear && !isNaN(metadataYear) && metadataYear > 1900 && metadataYear < 2030) {
-    return metadataYear.toString();
-  }
-  
-  // Then try title
-  if (title) {
-    const yearMatch = title.match(/\b(19|20)\d{2}\b/);
-    if (yearMatch) {
-      return yearMatch[0];
-    }
-  }
-  
-  return 'Unknown';
-}
-
-// Better genre extraction
-function extractGenre(title, description) {
-  const text = `${title} ${description}`.toLowerCase();
-  const genres = [];
-  
-  const genreKeywords = {
-    'Action': ['action', 'fight', 'battle', 'war', 'martial', 'karate', 'kung fu', 'stunt'],
-    'Comedy': ['comedy', 'funny', 'humor', 'laugh', 'hilarious', 'comic'],
-    'Drama': ['drama', 'emotional', 'serious', 'story', 'tragedy'],
-    'Romance': ['romance', 'love', 'romantic', 'lover', 'beloved', 'pyaar', 'ishq'],
-    'Horror': ['horror', 'scary', 'ghost', 'haunted', 'demon', 'bhoot', 'monster'],
-    'Thriller': ['thriller', 'suspense', 'mystery', 'detective', 'crime', 'murder'],    'Musical': ['musical', 'music', 'song', 'dance', 'singer', 'geet', 'sangeet'],
-    'Family': ['family', 'children', 'kids', 'cartoon', 'animation'],
-    'Classic': ['classic', 'vintage', 'old', 'golden', 'retro'],
-    'Historical': ['historical', 'history', 'period', 'ancient', 'king', 'queen', 'raj'],
-    'Adventure': ['adventure', 'journey', 'quest', 'exploration', 'safari'],
-    'Crime': ['crime', 'gangster', 'mafia', 'heist', 'robbery'],
-  };
-  
-  for (const [genre, keywords] of Object.entries(genreKeywords)) {
-    if (keywords.some(keyword => text.includes(keyword))) {
-      genres.push(genre);
-    }
-  }
-  
-  // Default to Classic if no genre found and it's an old movie
-  return genres.length > 0 ? genres : ['Classic'];
-}
-
-// Fetch movie poster/cover image
-async function fetchPoster(identifier) {
-  try {
-    const posterUrls = [
-      `https://archive.org/services/img/${identifier}`,
-      `https://archive.org/download/${identifier}/__ia_thumb.jpg`,
-      `https://archive.org/metadata/${identifier}/poster`,
-    ];
-    
-    for (const url of posterUrls) {
-      try {
-        const response = await fetch(url, { method: 'HEAD' });
-        if (response.ok && response.status === 200) {
-          return url;
-        }
-      } catch (e) {
+async function fetchWithRetry(url, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) return await response.json();
+      if (response.status === 429) {
+        // Rate limited, wait longer
+        await new Promise(resolve => setTimeout(resolve, 2000));
         continue;
       }
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
-  } catch (error) {
-    console.error(`Error fetching poster for ${identifier}:`, error.message);
   }
-  
   return null;
 }
 
-// Fetch video URL with quality preference
-async function fetchVideoUrl(identifier) {
+// Fetch movie watch providers with real deep links
+async function fetchMovieProviders(movieId) {  const providers = {
+    netflix: '', prime: '', hotstar: '', jiocinema: '',
+    zee5: '', sonyliv: '', apple: '', google: '', youtube: ''
+  };
+
   try {
-    const url = `https://archive.org/metadata/${identifier}`;
-    const response = await fetch(url);
-    const data = await response.json();    
-    if (!data.files) return null;
-    
-    // Filter video files - prefer MP4 with good size
-    const videoFiles = data.files.filter(f => {
-      const isVideo = f.name.endsWith('.mp4') || f.name.endsWith('.webm') || f.name.endsWith('.ogg');
-      const isOriginal = f.source === 'original';
-      const hasGoodSize = f.size && parseInt(f.size) > 50000000; // At least 50MB
-      const isNotTooLarge = f.size && parseInt(f.size) < 5000000000; // Less than 5GB
+    const url = `${TMDB_BASE_URL}/movie/${movieId}/watch/providers?api_key=${TMDB_API_KEY}`;
+    const data = await fetchWithRetry(url);
+
+    if (data?.results?.IN) {
+      const indian = data.results.IN;
+      const deepLinkBase = indian.link || `https://www.justwatch.com/in/movie/${movieId}`;
       
-      return isVideo && isOriginal && hasGoodSize && isNotTooLarge;
-    });
-    
-    if (videoFiles.length === 0) {
-      // Try any video file
-      const altVideos = data.files.filter(f => 
-        (f.name.endsWith('.mp4') || f.name.endsWith('.webm')) &&
-        f.format && f.format.includes('Video')
-      );
-      
-      if (altVideos.length > 0) {
-        // Prefer MP4
-        const mp4File = altVideos.find(f => f.name.endsWith('.mp4'));
-        return mp4File 
-          ? `https://archive.org/download/${identifier}/${mp4File.name}`
-          : `https://archive.org/download/${identifier}/${altVideos[0].name}`;
-      }
-      
-      return null;
-    }
-    
-    // Sort by quality - prefer MP4 and reasonable size
-    videoFiles.sort((a, b) => {
-      // Prefer MP4 over other formats
-      if (a.name.endsWith('.mp4') && !b.name.endsWith('.mp4')) return -1;
-      if (!a.name.endsWith('.mp4') && b.name.endsWith('.mp4')) return 1;
-      
-      // Then by size (prefer medium-large files, not too small or too large)
-      const aSize = parseInt(a.size) || 0;
-      const bSize = parseInt(b.size) || 0;
-      return bSize - aSize;
-    });
-    
-    return `https://archive.org/download/${identifier}/${videoFiles[0].name}`;
-    
-  } catch (error) {
-    console.error(`Error fetching video for ${identifier}:`, error.message);
-    return null;
-  }
-}
-// Main fetch function
-async function fetchPublicDomainMovies() {
-  console.log('🎬 Fetching public domain movies from Internet Archive...');
-  console.log(`📊 Using ${SEARCH_QUERIES.length} search queries\n`);
-  
-  const allMovies = [];
-  const seenIdentifiers = new Set();
-  let totalProcessed = 0;
-  let rejectedCount = 0;
-  
-  for (let i = 0; i < SEARCH_QUERIES.length; i++) {
-    const query = SEARCH_QUERIES[i];
-    console.log(`\n[${i + 1}/${SEARCH_QUERIES.length}] Searching: "${query}"`);
-    
-    try {
-      const url = `https://archive.org/advancedsearch.php?q=${encodeURIComponent(query)}&fl[]=identifier,title,year,description,mediatype&sort[]=downloads+desc&rows=50&output=json`;
-      
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (data.response && data.response.docs) {
-        const docs = data.response.docs.filter(doc => 
-          doc.mediatype === 'movies' && !seenIdentifiers.has(doc.identifier)
-        );
-        
-        console.log(`  Found ${docs.length} potential movies`);
-        
-        for (const doc of docs) {
-          if (seenIdentifiers.has(doc.identifier)) continue;
-          
-          seenIdentifiers.add(doc.identifier);
-          totalProcessed++;
-          
-          // Check if it's actually a movie
-          if (!isMovie(doc.title, doc.description || '')) {
-            rejectedCount++;
-            console.log(`  ❌ Rejected (not a movie): ${doc.title.substring(0, 50)}...`);
-            continue;
-          }
-          
-          // Fetch video URL
-          const videoUrl = await fetchVideoUrl(doc.identifier);
-          
-          if (videoUrl) {
-            // Fetch poster
-            const poster = await fetchPoster(doc.identifier);
-            
-            // Clean title and extract year
-            const { title: cleanTitleText, year: titleYear } = cleanTitle(doc.title);            const year = extractYear(doc.title, doc.year) || titleYear || 'Unknown';
-            
-            // Extract genres
-            const genre = extractGenre(doc.title, doc.description || '');
-            
-            // Clean description
-            const description = (doc.description || '')
-              .replace(/https?:\/\/\S+/g, '') // Remove URLs
-              .replace(/\s+/g, ' ')
-              .trim()
-              .substring(0, 500); // Limit to 500 chars
-            
-            allMovies.push({
-              id: doc.identifier,
-              title: cleanTitleText,
-              year: year,
-              description: description || 'A classic film from the golden era of cinema.',
-              poster: poster,
-              videoUrl: videoUrl,
-              genre: genre,
-              source: 'Internet Archive',
-              addedAt: new Date().toISOString(),
-            });
-            
-            console.log(`  ✅ Added: ${cleanTitleText} (${year}) - ${genre.join(', ')}`);
-          } else {
-            console.log(`  ⚠️  No video found: ${doc.title.substring(0, 50)}...`);
-          }
-          
-          // Rate limiting - wait 500ms between requests
-          await new Promise(resolve => setTimeout(resolve, 500));
+      const allProviders = [
+        ...(indian.flatrate || []),
+        ...(indian.rent || []),
+        ...(indian.buy || []),
+      ];
+
+      for (const provider of allProviders) {
+        const config = INDIAN_PROVIDERS[provider.provider_name];
+        if (config && !providers[config.key]) {
+          providers[config.key] = deepLinkBase;
         }
       }
-      
-      // Wait between queries
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-    } catch (error) {
-      console.error(`❌ Error fetching query "${query}":`, error.message);
+    }
+  } catch (error) {
+    console.error(`Provider fetch error for ${movieId}:`, error.message);
+  }
+
+  return providers;
+}
+
+// Get genre names from IDs
+function getGenreNames(genreIds) {
+  return (genreIds || []).map(id => GENRE_MAP[id]).filter(Boolean);
+}
+
+// Process a list of movies
+async function processMovies(movies, allMovies, seenIds, source) {
+  let added = 0;
+  for (const movie of movies) {
+    if (!movie.id || seenIds.has(movie.id) || !movie.poster_path) continue;
+    seenIds.add(movie.id);
+
+    const providers = await fetchMovieProviders(movie.id);
+
+    allMovies.push({
+      id: movie.id,
+      title: movie.title,      original_title: movie.original_title,
+      overview: movie.overview || '',
+      poster: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
+      backdrop: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : null,
+      release_date: movie.release_date || '',
+      year: movie.release_date ? movie.release_date.split('-')[0] : 'Unknown',
+      rating: movie.vote_average ? parseFloat(movie.vote_average.toFixed(1)) : 0,
+      genres: getGenreNames(movie.genre_ids),
+      genre_ids: movie.genre_ids || [],
+      source: source || 'TMDB',
+      netflix: providers.netflix,
+      prime: providers.prime,
+      hotstar: providers.hotstar,
+      jiocinema: providers.jiocinema,
+      zee5: providers.zee5,
+      sonyliv: providers.sonyliv,
+      apple: providers.apple,
+      google: providers.google,
+      youtube: providers.youtube,
+      addedAt: new Date().toISOString(),
+    });
+
+    added++;
+    if (added % 5 === 0) {
+      console.log(`    ... added ${added} movies from ${source}`);
+    }
+
+    // Small delay to avoid rate limits
+    await new Promise(resolve => setTimeout(resolve, 150));
+  }
+  return added;
+}
+
+async function fetchTMDBMovies() {
+  console.log('🎬 Fetching UNLIMITED movies from TMDB (released + upcoming)...\n');
+
+  const allMovies = [];
+  const seenIds = new Set();
+
+  // ============ SECTION 1: MULTI-PAGE STANDARD CATEGORIES ============
+  const standardCategories = [
+    { endpoint: '/movie/popular', name: 'Popular Movies', pages: 10 },
+    { endpoint: '/movie/top_rated', name: 'Top Rated', pages: 8 },
+    { endpoint: '/movie/now_playing', name: 'Now Playing', pages: 5 },
+    { endpoint: '/movie/upcoming', name: 'Upcoming', pages: 10 },
+  ];
+
+  for (const cat of standardCategories) {
+    console.log(`\n📽️  Fetching ${cat.name} (${cat.pages} pages)...`);
+        for (let page = 1; page <= cat.pages; page++) {
+      try {
+        const url = `${TMDB_BASE_URL}${cat.endpoint}?api_key=${TMDB_API_KEY}&language=hi-IN&page=${page}`;
+        const data = await fetchWithRetry(url);
+        
+        if (data?.results?.length > 0) {
+          const added = await processMovies(data.results, allMovies, seenIds, cat.name);
+          console.log(`  Page ${page}: +${added} movies`);
+        }
+      } catch (error) {
+        console.error(`  Page ${page} error:`, error.message);
+      }
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
+
+  // ============ SECTION 2: TRENDING (Weekly & Daily) ============
+  console.log(`\n🔥 Fetching Trending movies...`);
+  const trendingWindows = ['day', 'week'];
   
-  console.log(`\n📊 Total processed: ${totalProcessed}`);
-  console.log(`❌ Rejected (not movies): ${rejectedCount}`);
-  console.log(`✅ Total movies added: ${allMovies.length}`);
+  for (const window of trendingWindows) {
+    for (let page = 1; page <= 5; page++) {
+      try {
+        const url = `${TMDB_BASE_URL}/trending/movie/${window}?api_key=${TMDB_API_KEY}&language=hi-IN&page=${page}`;
+        const data = await fetchWithRetry(url);
+        
+        if (data?.results?.length > 0) {
+          const added = await processMovies(data.results, allMovies, seenIds, `Trending ${window}`);
+          console.log(`  Trending ${window} Page ${page}: +${added}`);
+        }
+      } catch (error) {
+        console.error(`  Trending error:`, error.message);
+      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+
+  // ============ SECTION 3: BOLLYWOOD / HINDI DISCOVER ============
+  console.log(`\n🇮🇳 Fetching Bollywood & Hindi movies...`);
+  const hindiFilters = [
+    { language: 'hi', name: 'Hindi Language', pages: 15 },
+    { region: 'IN', name: 'Indian Region', pages: 10 },
+    { keywords: 'bollywood', name: 'Bollywood', pages: 5 },
+  ];
+
+  for (const filter of hindiFilters) {
+    for (let page = 1; page <= filter.pages; page++) {
+      try {
+        let url = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=hi-IN&page=${page}&sort_by=popularity.desc`;
+        if (filter.language) url += `&with_original_language=${filter.language}`;        if (filter.region) url += `&with_origin_country=${filter.region}`;
+        if (filter.keywords) url += `&with_keywords=233624`; // bollywood keyword id
+        
+        const data = await fetchWithRetry(url);
+        if (data?.results?.length > 0) {
+          const added = await processMovies(data.results, allMovies, seenIds, filter.name);
+          console.log(`  ${filter.name} Page ${page}: +${added}`);
+        }
+      } catch (error) {
+        console.error(`  Hindi discover error:`, error.message);
+      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+
+  // ============ SECTION 4: UPCOMING BY MONTH (Next 12 Months) ============
+  console.log(`\n📅 Fetching Upcoming Movies (Next 12 Months)...`);
+  const today = new Date();
   
-  // Save to JSON file
+  for (let monthOffset = 0; monthOffset < 12; monthOffset++) {
+    const futureDate = new Date(today);
+    futureDate.setMonth(futureDate.getMonth() + monthOffset);
+    const nextMonth = new Date(futureDate);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    const fromDate = futureDate.toISOString().split('T')[0];
+    const toDate = nextMonth.toISOString().split('T')[0];
+
+    try {
+      const url = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=hi-IN&sort_by=popularity.desc&primary_release_date.gte=${fromDate}&primary_release_date.lte=${toDate}&page=1`;
+      const data = await fetchWithRetry(url);
+      
+      if (data?.results?.length > 0) {
+        const added = await processMovies(data.results, allMovies, seenIds, `Upcoming ${fromDate.slice(0, 7)}`);
+        console.log(`  ${fromDate.slice(0, 7)}: +${added} upcoming movies`);
+      }
+    } catch (error) {
+      console.error(`  Upcoming month error:`, error.message);
+    }
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  // ============ SECTION 5: POPULAR ACTORS' FILMOGRAPHY ============
+  console.log(`\n⭐ Fetching Popular Actor Movies...`);
+  const popularActorIds = [
+    15111,  // Shah Rukh Khan
+    19414,  // Salman Khan
+    11618,  // Aamir Khan
+    14114,  // Akshay Kumar
+    6674,   // Hrithik Roshan    37133,  // Ranbir Kapoor
+    56839,  // Ranveer Singh
+    37917,  // Deepika Padukone
+    57112,  // Alia Bhatt
+    4599,   // Leonardo DiCaprio
+    3223,   // Robert Downey Jr.
+    74568,  // Chris Hemsworth
+    2963,   // Nicolas Cage
+  ];
+
+  for (const actorId of popularActorIds) {
+    try {
+      const url = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=hi-IN&with_cast=${actorId}&sort_by=popularity.desc&page=1`;
+      const data = await fetchWithRetry(url);
+      
+      if (data?.results?.length > 0) {
+        const added = await processMovies(data.results, allMovies, seenIds, `Actor ${actorId}`);
+        if (added > 0) console.log(`  Actor ${actorId}: +${added}`);
+      }
+    } catch (error) {
+      console.error(`  Actor error:`, error.message);
+    }
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  // ============ SECTION 6: GENRE-WISE POPULAR ============
+  console.log(`\n🎭 Fetching Genre-wise Popular Movies...`);
+  const popularGenres = [28, 12, 16, 35, 80, 18, 14, 27, 878, 53, 10749];
+
+  for (const genreId of popularGenres) {
+    try {
+      const url = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=hi-IN&with_genres=${genreId}&sort_by=popularity.desc&page=1`;
+      const data = await fetchWithRetry(url);
+      
+      if (data?.results?.length > 0) {
+        const added = await processMovies(data.results, allMovies, seenIds, GENRE_MAP[genreId]);
+        console.log(`  ${GENRE_MAP[genreId]}: +${added}`);
+      }
+    } catch (error) {
+      console.error(`  Genre error:`, error.message);
+    }
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  // ============ SAVE TO JSON ============
+  console.log(`\n💾 Saving ${allMovies.length} movies to JSON...`);
+
   const dataDir = path.join(__dirname, '..', 'data');
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });  }
-  
-  const filePath = path.join(dataDir, 'public-domain-movies.json');
+
+  // Sort by rating + popularity
+  allMovies.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+  const filePath = path.join(dataDir, 'tmdb-movies.json');
   fs.writeFileSync(filePath, JSON.stringify(allMovies, null, 2));
-  
-  console.log(`\n🎉 Successfully saved ${allMovies.length} movies to ${filePath}`);
-  console.log('\n✨ Sample movies:');
-  allMovies.slice(0, 5).forEach(movie => {
-    console.log(`  • ${movie.title} (${movie.year}) - ${movie.genre.join(', ')}`);
-  });
+
+  // Print statistics
+  const stats = {
+    total: allMovies.length,
+    withNetflix: allMovies.filter(m => m.netflix).length,
+    withPrime: allMovies.filter(m => m.prime).length,
+    withHotstar: allMovies.filter(m => m.hotstar).length,
+    withJio: allMovies.filter(m => m.jiocinema).length,
+    upcoming: allMovies.filter(m => {
+      if (!m.release_date) return false;
+      return new Date(m.release_date) > new Date();
+    }).length,
+    hindi: allMovies.filter(m => m.source && (m.source.includes('Hindi') || m.source.includes('Bollywood'))).length,
+  };
+
+  console.log(`\n🎉 SUCCESS!`);
+  console.log(`📊 Statistics:`);
+  console.log(`  Total Movies: ${stats.total}`);
+  console.log(`  🟥 Netflix: ${stats.withNetflix}`);
+  console.log(`  🔵 Prime: ${stats.withPrime}`);
+  console.log(`  ⭐ Hotstar: ${stats.withHotstar}`);
+  console.log(`  🟡 JioCinema: ${stats.withJio}`);
+  console.log(`  📅 Upcoming: ${stats.upcoming}`);
+  console.log(`  🇮🇳 Hindi/Bollywood: ${stats.hindi}`);
+  console.log(`\n💾 Saved to: ${filePath}`);
 }
 
-// Run the script
-fetchPublicDomainMovies().catch(error => {
+// Run
+fetchTMDBMovies().catch(error => {
   console.error('❌ Fatal error:', error);
   process.exit(1);
 });
