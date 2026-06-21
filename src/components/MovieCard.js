@@ -1,5 +1,6 @@
+'use client';
+
 import Link from 'next/link';
-import Image from 'next/image';
 
 export default function MovieCard({ movie, type }) {
   const isStreaming = type === 'streaming';
@@ -9,7 +10,7 @@ export default function MovieCard({ movie, type }) {
   
   // Link destination
   const linkHref = isStreaming ? `/watch/${movie.id}` : `/movies/${movie.id}`;
-  
+
   return (
     <div className="bg-dark rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
       {/* Poster */}
@@ -20,7 +21,6 @@ export default function MovieCard({ movie, type }) {
             alt={movie.title}
             className="w-full h-full object-cover"
             onError={(e) => {
-              // Fallback when image fails to load
               e.target.style.display = 'none';
               const fallback = e.target.parentElement.querySelector('.poster-fallback');
               if (fallback) fallback.style.display = 'flex';
@@ -34,7 +34,7 @@ export default function MovieCard({ movie, type }) {
           style={{ display: posterUrl ? 'none' : 'flex' }}
         >
           <div className="text-center">
-            <div className="text-6xl mb-2"></div>
+            <div className="text-6xl mb-2">🎬</div>
             <p className="text-gray-400 text-sm px-4">{movie.title}</p>
           </div>
         </div>
