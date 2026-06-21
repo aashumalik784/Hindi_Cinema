@@ -1,9 +1,12 @@
-name: Update Public Domain Movies
+name: Update TMDB Movies
 
 on:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 12 * * *'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   update:
@@ -13,17 +16,23 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      
       - name: Install dependencies
         run: npm install
-      - name: Fetch public domain movies
-        run: npm run fetch:public-domain
+      
+      - name: Fetch TMDB movies
+        run: npm run fetch:tmdb
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+      
       - name: Commit and push if changed
         run: |
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'actions@github.com'
-          git add data/public-domain-movies.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update public domain movies" && git push)
+          git add data/tmdb-movies.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update TMDB movies" && git push)
