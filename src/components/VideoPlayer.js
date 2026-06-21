@@ -12,7 +12,6 @@ export default function VideoPlayer({ videoUrl, poster, title }) {
     setIsLoading(false);
     setError(true);
     
-    // Check video element error
     if (videoRef.current && videoRef.current.error) {
       const errorCode = videoRef.current.error.code;
       switch(errorCode) {
