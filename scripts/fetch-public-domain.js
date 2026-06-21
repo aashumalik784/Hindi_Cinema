@@ -2,60 +2,128 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 
+// Better search queries - ONLY for Hindi/Bollywood movies
 const SEARCH_QUERIES = [
   'hindi film public domain',
   'bollywood classic movie',
   'indian cinema public domain',
-  'hindi old movie',
-  'hindi movie 1950s',
-  'hindi movie 1960s',
-  'hindi movie 1970s',
-  'classic bollywood',
-  'hindi drama film',
-  'hindi comedy movie',
-  'hindi romance film',
-  'hindi action movie',
+  'hindi old movie 1950s 1960s 1970s',
+  'classic bollywood film',
+  'hindi drama movie',
+  'hindi comedy film',
+  'hindi romance movie',
+  'hindi action film',
+  'hindi musical movie',
 ];
 
+// Remove unwanted keywords from titles
+const UNWANTED_KEYWORDS = [
+  'untouched', 'web', 'dl', 'brrip', 'hdrip', 'dvdrip', 'bluray', 'blu-ray',
+  '720p', '1080p', '480p', '2160p', '4k', 'hd', 'sd',
+  'avc', 'h264', 'h265', 'hevc', 'x264', 'x265', 'aac', 'mp3', 'ac3', 'dts',
+  'superhit', 'blockbuster', 'bollywood', 'hollywood', 'south', 'dubbed',
+  'movie', 'film', 'cinema', 'video', 'full', 'and', 'with', 'feat', 'ft',
+  'bhaiyaa', 'bade bhaiyaa', 'hindi', 'english', 'esub', 'esubs',
+  'funny', 'action', 'comedy', 'romantic', 'drama', 'thriller'
+];
+
+// Words that indicate it's NOT a movie
+const NOT_MOVIE_INDICATORS = [
+  'episode', 'podcast', 'series', 'season', 's01', 's02', 's03', 's04',
+  'complete series', 'complete season', 'tv show', 'documentary',
+  'horror of babylon', 'the horror of babylon', 'drawn together',
+  'meet the crew', 'bonus episode', '13 nights of halloween'
+];
+
+// Clean movie title
 function cleanTitle(title) {
   if (!title) return { title: 'Unknown Title', year: null };
   
-  let clean = title
-    .replace(/\b(untouched|web|dl|brrip|hdrip|dvdrip|bluray|blu-ray)\b/gi, '')
-    .replace(/\b(720p|1080p|480p|2160p|4k)\b/gi, '')
-    .replace(/\b(avc|h264|h265|hevc|x264|x265|aac|mp3|ac3|dts)\b/gi, '')
-    .replace(/\b(superhit|blockbuster|bollywood|hollywood|south|dubbed)\b/gi, '')
-    .replace(/\b(movie|film|cinema|video|full)\b/gi, '')
-    .replace(/\b(and|with|feat|ft)\b/gi, '')
-    .replace(/\[(.*?)\]/g, '')
-    .replace(/[._]+/g, ' ')
-    .replace(/[-]{2,}/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  let clean = title;
   
-  const yearMatch = clean.match(/\b(19|20)\d{2}\b/);
+  // Remove brackets content (but keep year in parentheses)
+  clean = clean.replace(/\[(.*?)\]/g, '');
+  clean = clean.replace(/\((.*?)\)/g, (match, content) => {
+    // Keep if it's a year
+    if (/\b(19|20)\d{2}\b/.test(content)) {
+      return match;
+    }    return '';
+  });
+  
+  // Remove unwanted keywords
+  UNWANTED_KEYWORDS.forEach(keyword => {
+    const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+    clean = clean.replace(regex, '');
+  });
+  
+  // Remove multiple dots, dashes, underscores, pipes
+  clean = clean.replace(/[._|]+/g, ' ');
+  clean = clean.replace(/[-]{2,}/g, ' ');
+  
+  // Remove extra spaces
+  clean = clean.replace(/\s+/g, ' ').trim();
+  
+  // Remove trailing punctuation
+  clean = clean.replace(/[,.\-_:]+$/, '').trim();
+  
+  // Extract year
+  const yearMatch = clean.match(/\b(19|20)(\d{2})\b/);
+  let year = null;
+  
   if (yearMatch) {
-    const year = yearMatch[0];
+    year = yearMatch[0];
     clean = clean.replace(year, '').trim();
-    clean = clean.replace(/[\s\(\)\[\]\-_:,.]+$/, '').trim();
-    return { title: clean, year: year };
+    clean = clean.replace(/[\s\(\)]+$/, '').trim();
   }
   
-  if (clean.length > 60) {
-    clean = clean.substring(0, 60).trim();
+  // Limit title length
+  if (clean.length > 80) {
+    clean = clean.substring(0, 80).trim();
     const lastSpace = clean.lastIndexOf(' ');
-    if (lastSpace > 40) {
+    if (lastSpace > 60) {
       clean = clean.substring(0, lastSpace);
     }
-  }  
-  return { title: clean || title, year: null };
+  }
+  
+  // Capitalize properly
+  clean = clean.split(' ').map(word => {
+    if (word.length > 2) {
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }
+    return word.toUpperCase();
+  }).join(' ');
+  
+  return { 
+    title: clean || title.split('(')[0].trim(), 
+    year 
+  };}
+
+// Check if it's actually a movie (not podcast/TV show)
+function isMovie(title, description) {
+  const text = `${title} ${description}`.toLowerCase();
+  
+  // If it contains podcast/TV show indicators, reject it
+  for (const indicator of NOT_MOVIE_INDICATORS) {
+    if (text.includes(indicator.toLowerCase())) {
+      return false;
+    }
+  }
+  
+  // Must have a year or look like a movie title
+  const hasYear = /\b(19|20)\d{2}\b/.test(text);
+  const hasMovieKeywords = /\b(movie|film|cinema|picture)\b/.test(text);
+  
+  return hasYear || hasMovieKeywords || title.length < 100;
 }
 
+// Extract year from title or metadata
 function extractYear(title, metadataYear) {
-  if (metadataYear && !isNaN(metadataYear)) {
+  // First try metadata year
+  if (metadataYear && !isNaN(metadataYear) && metadataYear > 1900 && metadataYear < 2030) {
     return metadataYear.toString();
   }
   
+  // Then try title
   if (title) {
     const yearMatch = title.match(/\b(19|20)\d{2}\b/);
     if (yearMatch) {
@@ -66,22 +134,23 @@ function extractYear(title, metadataYear) {
   return 'Unknown';
 }
 
+// Better genre extraction
 function extractGenre(title, description) {
   const text = `${title} ${description}`.toLowerCase();
   const genres = [];
   
   const genreKeywords = {
-    'Action': ['action', 'fight', 'battle', 'war', 'martial', 'karate', 'kung fu'],
-    'Comedy': ['comedy', 'funny', 'humor', 'laugh', 'hilarious'],
-    'Drama': ['drama', 'emotional', 'serious', 'story'],
-    'Romance': ['romance', 'love', 'romantic', 'lover', 'beloved'],
-    'Horror': ['horror', 'scary', 'ghost', 'haunted', 'demon', 'bhoot'],
-    'Thriller': ['thriller', 'suspense', 'mystery', 'detective', 'crime'],
-    'Musical': ['musical', 'music', 'song', 'dance', 'singer'],
+    'Action': ['action', 'fight', 'battle', 'war', 'martial', 'karate', 'kung fu', 'stunt'],
+    'Comedy': ['comedy', 'funny', 'humor', 'laugh', 'hilarious', 'comic'],
+    'Drama': ['drama', 'emotional', 'serious', 'story', 'tragedy'],
+    'Romance': ['romance', 'love', 'romantic', 'lover', 'beloved', 'pyaar', 'ishq'],
+    'Horror': ['horror', 'scary', 'ghost', 'haunted', 'demon', 'bhoot', 'monster'],
+    'Thriller': ['thriller', 'suspense', 'mystery', 'detective', 'crime', 'murder'],    'Musical': ['musical', 'music', 'song', 'dance', 'singer', 'geet', 'sangeet'],
     'Family': ['family', 'children', 'kids', 'cartoon', 'animation'],
-    'Classic': ['classic', 'vintage', 'old', 'golden'],
-    'Historical': ['historical', 'history', 'period', 'ancient', 'king', 'queen'],
-    'Adventure': ['adventure', 'journey', 'quest', 'exploration'],
+    'Classic': ['classic', 'vintage', 'old', 'golden', 'retro'],
+    'Historical': ['historical', 'history', 'period', 'ancient', 'king', 'queen', 'raj'],
+    'Adventure': ['adventure', 'journey', 'quest', 'exploration', 'safari'],
+    'Crime': ['crime', 'gangster', 'mafia', 'heist', 'robbery'],
   };
   
   for (const [genre, keywords] of Object.entries(genreKeywords)) {
@@ -90,19 +159,23 @@ function extractGenre(title, description) {
     }
   }
   
+  // Default to Classic if no genre found and it's an old movie
   return genres.length > 0 ? genres : ['Classic'];
 }
 
+// Fetch movie poster/cover image
 async function fetchPoster(identifier) {
   try {
     const posterUrls = [
-      `https://archive.org/services/img/${identifier}`,      `https://archive.org/download/${identifier}/__ia_thumb.jpg`,
+      `https://archive.org/services/img/${identifier}`,
+      `https://archive.org/download/${identifier}/__ia_thumb.jpg`,
+      `https://archive.org/metadata/${identifier}/poster`,
     ];
     
     for (const url of posterUrls) {
       try {
         const response = await fetch(url, { method: 'HEAD' });
-        if (response.ok) {
+        if (response.ok && response.status === 200) {
           return url;
         }
       } catch (e) {
@@ -116,41 +189,49 @@ async function fetchPoster(identifier) {
   return null;
 }
 
+// Fetch video URL with quality preference
 async function fetchVideoUrl(identifier) {
   try {
     const url = `https://archive.org/metadata/${identifier}`;
     const response = await fetch(url);
-    const data = await response.json();
-    
+    const data = await response.json();    
     if (!data.files) return null;
     
+    // Filter video files - prefer MP4 with good size
     const videoFiles = data.files.filter(f => {
       const isVideo = f.name.endsWith('.mp4') || f.name.endsWith('.webm') || f.name.endsWith('.ogg');
       const isOriginal = f.source === 'original';
-      const hasGoodSize = f.size && parseInt(f.size) > 10000000;
+      const hasGoodSize = f.size && parseInt(f.size) > 50000000; // At least 50MB
+      const isNotTooLarge = f.size && parseInt(f.size) < 5000000000; // Less than 5GB
       
-      return isVideo && isOriginal && hasGoodSize;
+      return isVideo && isOriginal && hasGoodSize && isNotTooLarge;
     });
     
     if (videoFiles.length === 0) {
+      // Try any video file
       const altVideos = data.files.filter(f => 
         (f.name.endsWith('.mp4') || f.name.endsWith('.webm')) &&
         f.format && f.format.includes('Video')
       );
       
       if (altVideos.length > 0) {
+        // Prefer MP4
         const mp4File = altVideos.find(f => f.name.endsWith('.mp4'));
         return mp4File 
           ? `https://archive.org/download/${identifier}/${mp4File.name}`
           : `https://archive.org/download/${identifier}/${altVideos[0].name}`;
       }
       
-      return null;    }
+      return null;
+    }
     
+    // Sort by quality - prefer MP4 and reasonable size
     videoFiles.sort((a, b) => {
+      // Prefer MP4 over other formats
       if (a.name.endsWith('.mp4') && !b.name.endsWith('.mp4')) return -1;
       if (!a.name.endsWith('.mp4') && b.name.endsWith('.mp4')) return 1;
       
+      // Then by size (prefer medium-large files, not too small or too large)
       const aSize = parseInt(a.size) || 0;
       const bSize = parseInt(b.size) || 0;
       return bSize - aSize;
@@ -163,7 +244,7 @@ async function fetchVideoUrl(identifier) {
     return null;
   }
 }
-
+// Main fetch function
 async function fetchPublicDomainMovies() {
   console.log('🎬 Fetching public domain movies from Internet Archive...');
   console.log(`📊 Using ${SEARCH_QUERIES.length} search queries\n`);
@@ -171,6 +252,7 @@ async function fetchPublicDomainMovies() {
   const allMovies = [];
   const seenIdentifiers = new Set();
   let totalProcessed = 0;
+  let rejectedCount = 0;
   
   for (let i = 0; i < SEARCH_QUERIES.length; i++) {
     const query = SEARCH_QUERIES[i];
@@ -194,19 +276,39 @@ async function fetchPublicDomainMovies() {
           
           seenIdentifiers.add(doc.identifier);
           totalProcessed++;
-                    const videoUrl = await fetchVideoUrl(doc.identifier);
+          
+          // Check if it's actually a movie
+          if (!isMovie(doc.title, doc.description || '')) {
+            rejectedCount++;
+            console.log(`  ❌ Rejected (not a movie): ${doc.title.substring(0, 50)}...`);
+            continue;
+          }
+          
+          // Fetch video URL
+          const videoUrl = await fetchVideoUrl(doc.identifier);
           
           if (videoUrl) {
+            // Fetch poster
             const poster = await fetchPoster(doc.identifier);
-            const { title: cleanTitleText, year: titleYear } = cleanTitle(doc.title);
-            const year = extractYear(doc.title, doc.year) || titleYear || 'Unknown';
+            
+            // Clean title and extract year
+            const { title: cleanTitleText, year: titleYear } = cleanTitle(doc.title);            const year = extractYear(doc.title, doc.year) || titleYear || 'Unknown';
+            
+            // Extract genres
             const genre = extractGenre(doc.title, doc.description || '');
+            
+            // Clean description
+            const description = (doc.description || '')
+              .replace(/https?:\/\/\S+/g, '') // Remove URLs
+              .replace(/\s+/g, ' ')
+              .trim()
+              .substring(0, 500); // Limit to 500 chars
             
             allMovies.push({
               id: doc.identifier,
               title: cleanTitleText,
               year: year,
-              description: doc.description || '',
+              description: description || 'A classic film from the golden era of cinema.',
               poster: poster,
               videoUrl: videoUrl,
               genre: genre,
@@ -214,13 +316,17 @@ async function fetchPublicDomainMovies() {
               addedAt: new Date().toISOString(),
             });
             
-            console.log(`  ✅ Added: ${cleanTitleText} (${year})`);
+            console.log(`  ✅ Added: ${cleanTitleText} (${year}) - ${genre.join(', ')}`);
+          } else {
+            console.log(`  ⚠️  No video found: ${doc.title.substring(0, 50)}...`);
           }
           
+          // Rate limiting - wait 500ms between requests
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
       
+      // Wait between queries
       await new Promise(resolve => setTimeout(resolve, 1000));
       
     } catch (error) {
@@ -229,19 +335,26 @@ async function fetchPublicDomainMovies() {
   }
   
   console.log(`\n📊 Total processed: ${totalProcessed}`);
+  console.log(`❌ Rejected (not movies): ${rejectedCount}`);
   console.log(`✅ Total movies added: ${allMovies.length}`);
   
+  // Save to JSON file
   const dataDir = path.join(__dirname, '..', 'data');
   if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
+    fs.mkdirSync(dataDir, { recursive: true });  }
   
   const filePath = path.join(dataDir, 'public-domain-movies.json');
   fs.writeFileSync(filePath, JSON.stringify(allMovies, null, 2));
   
   console.log(`\n🎉 Successfully saved ${allMovies.length} movies to ${filePath}`);
+  console.log('\n✨ Sample movies:');
+  allMovies.slice(0, 5).forEach(movie => {
+    console.log(`  • ${movie.title} (${movie.year}) - ${movie.genre.join(', ')}`);
+  });
 }
 
+// Run the script
 fetchPublicDomainMovies().catch(error => {
-  console.error('❌ Fatal error:', error);  process.exit(1);
+  console.error('❌ Fatal error:', error);
+  process.exit(1);
 });
